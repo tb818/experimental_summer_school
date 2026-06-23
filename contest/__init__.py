@@ -9,7 +9,6 @@ class C(BaseConstants):
     NAME_IN_URL = 'contest'
     PLAYERS_PER_GROUP = 2
     NUM_ROUNDS = 3
-    ENDOWMENT = Currency(10)
     COST_PER_TICKET = Currency(0.50)
     PRIZE = Currency(8)
 
@@ -29,7 +28,7 @@ class Group(BaseGroup):
 
     def setup_round(self):
         self.prize = C.PRIZE
-        self.csf = "allpay"
+        self.csf = self.session.config["csf"]
         for player in self.get_players():
             player.setup_round()
 
@@ -74,7 +73,7 @@ class Player(BasePlayer):
     earnings = models.CurrencyField() # Potential money -- "payoff" is defined by oTree as actual money received
 
     def setup_round(self):
-        self.endowment = C.ENDOWMENT
+        self.endowment = self.session.config.get["contest_endowment",C.ENDOWMENT]
         self.cost_per_ticket = C.COST_PER_TICKET
 
     @property
