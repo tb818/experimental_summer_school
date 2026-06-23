@@ -41,6 +41,10 @@ class Player(BasePlayer):
         self.endowment = C.ENDOWMENT
         self.cost_per_ticket = C.COST_PER_TICKET
 
+    @property
+    def coplayer(self):
+        return self.group.get_player_by_id(3-self.id_in_group)
+
 
 # PAGES
 class SetupRound(WaitPage):
