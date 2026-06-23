@@ -33,6 +33,15 @@ SESSION_CONFIGS = [
         csf="allpay",
         contest_endowment=10,
     ),
+    dict(
+        name="contest_lottery_testing",
+        app_sequence=[
+            "contest"
+        ],
+        num_demo_participants=2,
+        csf="lottery",
+        contest_endowment=10,
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

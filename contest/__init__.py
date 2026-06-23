@@ -1,3 +1,5 @@
+import random
+
 from otree.api import *
 
 doc = """
@@ -51,11 +53,26 @@ class Group(BaseGroup):
             else:
                 player.prize_won = 0.5
 
+    def determine_outcome_lottery(self):
+        try:
+            winner = random.choices(self.get_players(),
+                                    weights=[p.tickets_purchased for p in self.get_players()],
+                                    k=1)[0]
+        except ValueError: # should no tickets be bought
+            winner = random.choices(self.get_players())
+        for player in self.get_players():
+            if player == winner:
+                player.prize_won = 1
+            else:
+                player.prize_won = 0
+
     def determine_outcome(self):
         if self.csf == "share":
             self.determine_outcome_share()
         elif self.csf == "allpay":
-            self.determine_outcome_allpay()#
+            self.determine_outcome_allpay()
+        elif self.csf == "lottery":
+            self.determine_outcome_lottery()
         for player in self.get_players():
             player.earnings = (
                 player.endowment
