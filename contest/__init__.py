@@ -73,7 +73,7 @@ class Player(BasePlayer):
     earnings = models.CurrencyField() # Potential money -- "payoff" is defined by oTree as actual money received
 
     def setup_round(self):
-        self.endowment = self.session.config.get["contest_endowment",C.ENDOWMENT]
+        self.endowment = self.session.config["contest_endowment"]
         self.cost_per_ticket = C.COST_PER_TICKET
 
     @property
@@ -84,6 +84,9 @@ class Player(BasePlayer):
     def max_tickets_affordable(self):
         return int(self.endowment / self.cost_per_ticket)
 
+    def in_paid_rounds(self):
+        return [rd for rd in self.in_all_rounds() if rd.subsession.is_paid]
+
 # PAGES
 class SetupRound(WaitPage):
     wait_for_all_groups = True
@@ -93,7 +96,9 @@ class SetupRound(WaitPage):
         subsession.setup_round()
 
 class Intro(Page):
-    pass
+    @staticmethod
+    def is_displayed(player):
+        return player.round_number == 1
 
 class Decision(Page):
     form_model = "player"
@@ -123,7 +128,9 @@ class Outcome(Page):
     pass
 
 class EndBlock(Page):
-    pass
+    @staticmethod
+    def is_displayed(player):
+        return player.round_number == C.NUM_ROUNDS
 
 class ResultsWaitPage(WaitPage):
     pass
