@@ -54,7 +54,8 @@ class Intro(Page):
     pass
 
 class Decision(Page):
-    pass
+    form_model = "player"
+    form_fields = ["tickets_purchased"]
 
 class WaitForDecisions(WaitPage):
     pass
