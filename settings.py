@@ -37,6 +37,11 @@ SESSION_CONFIGS = [
         app_sequence=["encryption"],
         num_demo_participants=3,
     ),
+    dict(
+        name="summary",
+        app_sequence=["summary"],
+        num_demo_participants=2,
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs
