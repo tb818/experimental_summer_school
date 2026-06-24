@@ -3,44 +3,61 @@ from os import environ
 SESSION_CONFIGS = [
     dict(
         name="splash_demo",
-        app_sequence=["splash"],
+        app_sequence=[
+            "splash"
+        ],
         num_demo_participants=3,
     ),
     dict(
         name="quiz_demo",
-        app_sequence=["quiz"],
+        app_sequence=[
+            "quiz"
+        ],
         num_demo_participants=3,
     ),
     dict(
         name="contest_share_testing",
-        app_sequence=["contest"],
+        app_sequence=[
+            "contest"
+        ],
         num_demo_participants=2,
         csf="share",
         contest_endowment=10,
     ),
     dict(
         name="contest_allpay_testing",
-        app_sequence=["contest"],
+        app_sequence=[
+            "contest"
+        ],
         num_demo_participants=2,
         csf="allpay",
         contest_endowment=10,
     ),
     dict(
         name="contest_lottery_testing",
-        app_sequence=["contest"],
+        app_sequence=[
+            "contest"
+        ],
         num_demo_participants=2,
         csf="lottery",
         contest_endowment=10,
     ),
     dict(
         name="encryption",
-        app_sequence=["encryption"],
+        app_sequence=[
+            "encryption"
+        ],
         num_demo_participants=3,
     ),
     dict(
         name="summary_test",
-        app_sequence=["summary"],
-        num_demo_participants=3,
+        app_sequence=[
+            "contest",
+            "summary"
+        ],
+        num_demo_participants=2,
+        csf="allpay",
+        contest_endowment=10,
     ),
 ]
 
@@ -55,7 +72,7 @@ SESSION_CONFIG_DEFAULTS = dict(
     doc=""
 )
 
-PARTICIPANT_FIELDS = []
+PARTICIPANT_FIELDS = ["earnings_contest", "earnings_encryption"]
 SESSION_FIELDS = []
 
 # ISO-639 code

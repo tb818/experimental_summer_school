@@ -2,26 +2,29 @@ import random
 
 from otree.api import *
 
+
 doc = """
-Implementation of contest games with selectable CSF
+Implementation of contest games with selectable contest success function
 """
 
 
 class C(BaseConstants):
     NAME_IN_URL = 'contest'
     PLAYERS_PER_GROUP = 2
-    NUM_ROUNDS = 2
+    NUM_ROUNDS = 1
     NUM_PAID_ROUNDS = 1
+    ENDOWMENT = Currency(10)
     COST_PER_TICKET = Currency(0.50)
     PRIZE = Currency(8)
 
 
 class Subsession(BaseSubsession):
-    is_paid = models.BooleanField(initial=False) # to default to False initially
+    is_paid = models.BooleanField(initial=False)
 
     def setup_round(self):
         if self.round_number == 1:
             self.setup_paid_rounds()
+        self.setup_groups()
         for group in self.get_groups():
             group.setup_round()
 
@@ -45,14 +48,12 @@ class Group(BaseGroup):
             player.setup_round()
 
     def determine_outcome_share(self):
-        total = 0
-        for player in self.get_players():
-            total += player.tickets_purchased
+        total = sum(player.tickets_purchased for player in self.get_players())
         for player in self.get_players():
             try:
                 player.prize_won = player.tickets_purchased / total
             except ZeroDivisionError:
-                player.prize_won = 1/len(self.get_players())
+                player.prize_won = 1 / len(self.get_players())
 
     def determine_outcome_allpay(self):
         for player in self.get_players():
@@ -68,8 +69,8 @@ class Group(BaseGroup):
             winner = random.choices(self.get_players(),
                                     weights=[p.tickets_purchased for p in self.get_players()],
                                     k=1)[0]
-        except ValueError: # should no tickets be bought
-            winner = random.choices(self.get_players())
+        except ValueError:
+            winner = random.choice(self.get_players())
         for player in self.get_players():
             if player == winner:
                 player.prize_won = 1
@@ -85,9 +86,9 @@ class Group(BaseGroup):
             self.determine_outcome_lottery()
         for player in self.get_players():
             player.earnings = (
-                player.endowment
-                - player.tickets_purchased * player.cost_per_ticket
-                + self.prize * player.prize_won
+                    player.endowment -
+                    player.tickets_purchased * player.cost_per_ticket +
+                    self.prize * player.prize_won
             )
             if self.subsession.is_paid:
                 player.payoff = player.earnings
@@ -97,15 +98,15 @@ class Player(BasePlayer):
     cost_per_ticket = models.CurrencyField()
     tickets_purchased = models.IntegerField()
     prize_won = models.FloatField()
-    earnings = models.CurrencyField() # Potential money -- "payoff" is defined by oTree as actual money received
+    earnings = models.CurrencyField()
 
     def setup_round(self):
-        self.endowment = self.session.config["contest_endowment"]
+        self.endowment = self.session.config.get("contest_endowment", C.ENDOWMENT)
         self.cost_per_ticket = C.COST_PER_TICKET
 
     @property
     def coplayer(self):
-        return self.group.get_player_by_id(3-self.id_in_group)
+        return self.group.get_player_by_id(3 - self.id_in_group)
 
     @property
     def max_tickets_affordable(self):
@@ -113,6 +114,12 @@ class Player(BasePlayer):
 
     def in_paid_rounds(self):
         return [rd for rd in self.in_all_rounds() if rd.subsession.is_paid]
+
+    def store_payoffs(self):
+        self.participant.earnings_contest = (
+            sum(p.payoff for p in self.in_all_rounds())
+        )
+
 
 # PAGES
 class SetupRound(WaitPage):
@@ -122,10 +129,12 @@ class SetupRound(WaitPage):
     def after_all_players_arrive(subsession):
         subsession.setup_round()
 
+
 class Intro(Page):
     @staticmethod
     def is_displayed(player):
         return player.round_number == 1
+
 
 class Decision(Page):
     form_model = "player"
@@ -137,11 +146,12 @@ class Decision(Page):
             return "You cannot buy a negative number of tickets."
         if values["tickets_purchased"] > player.max_tickets_affordable:
             return (
-                f"Buying {values['tickets_purchased']} tickets would cost"
-                f" {values['tickets_purchased'] * player.cost_per_ticket}"
-                f" which is more than your endowment of {player.endowment}!"
+                f"Buying {values['tickets_purchased']} tickets would cost "
+                f"{values['tickets_purchased'] * player.cost_per_ticket} "
+                f"which is more than your endowment of {player.endowment}."
             )
         return None
+
 
 class WaitForDecisions(WaitPage):
     wait_for_all_groups = True
@@ -151,19 +161,19 @@ class WaitForDecisions(WaitPage):
         for group in subsession.get_groups():
             group.determine_outcome()
 
+
 class Outcome(Page):
     pass
+
 
 class EndBlock(Page):
     @staticmethod
     def is_displayed(player):
         return player.round_number == C.NUM_ROUNDS
 
-class ResultsWaitPage(WaitPage):
-    pass
-
-class Results(Page):
-    pass
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        player.store_payoffs()
 
 
 page_sequence = [
