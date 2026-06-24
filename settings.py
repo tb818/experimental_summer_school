@@ -38,9 +38,9 @@ SESSION_CONFIGS = [
         num_demo_participants=3,
     ),
     dict(
-        name="summary",
+        name="summary_test",
         app_sequence=["summary"],
-        num_demo_participants=2,
+        num_demo_participants=3,
     ),
 ]
 

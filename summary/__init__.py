@@ -2,7 +2,7 @@ from otree.api import *
 
 
 doc = """
-App to display summary in experiments
+App to display summary of earnings in experiment
 """
 
 
@@ -16,7 +16,7 @@ class Subsession(BaseSubsession):
     def collect_results(self):
         for player in self.get_players():
             player.earnings_contest = Currency(5)
-            player.earnings_encryption = Currency(1.5)
+            player.earnings_encryption = Currency(1.50)
 
 
 class Group(BaseGroup):
@@ -27,15 +27,22 @@ class Player(BasePlayer):
     earnings_contest = models.CurrencyField()
     earnings_encryption = models.CurrencyField()
 
+
+
 # PAGES
 class CollectResults(WaitPage):
-    wait_for_all_groups =  True
+    wait_for_all_groups = True
 
     @staticmethod
     def after_all_players_arrive(subsession):
         subsession.collect_results()
 
+
 class Results(Page):
     pass
 
-page_sequence = [CollectResults, Results]
+
+page_sequence = [
+    CollectResults,
+    Results,
+]
