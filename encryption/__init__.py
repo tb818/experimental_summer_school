@@ -1,4 +1,5 @@
 import string
+import time
 
 from otree.api import *
 
@@ -13,6 +14,7 @@ class C(BaseConstants):
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 3
     PAYMENT_PER_CORRECT = 0.10
+    TIME_FOR_TASK = 300
 
 
 class Subsession(BaseSubsession):
@@ -22,8 +24,11 @@ class Subsession(BaseSubsession):
 
     def setup_round(self):
         self.payment_per_correct = Currency(C.PAYMENT_PER_CORRECT)
-        self.word = "ABABA"
+        self.word="ABABA"
         self.lookup_table = string.ascii_uppercase
+
+        for player in self.get_players():
+            player.setup_round()
 
     @property
     def lookup_dict(self):
@@ -31,13 +36,18 @@ class Subsession(BaseSubsession):
         for letter in string.ascii_uppercase:
             lookup[letter] = self.lookup_table.index(letter)+1
         return lookup
-    
+
     @property
     def correct_response(self):
         return [self.lookup_dict[letter] for letter in self.word]
+        return [
+            self.lookup_dict[self.word[0]],
+            self.lookup_dict[self.word[1]],
+            self.lookup_dict[self.word[2]],
+            self.lookup_dict[self.word[3]],
+            self.lookup_dict[self.word[4]],
+        ]
 
-def creating_session(subsession):
-    subsession.setup_round()
 
 class Group(BaseGroup):
     pass
@@ -51,10 +61,28 @@ class Player(BasePlayer):
     response_4 = models.IntegerField()
     response_5 = models.IntegerField()
     is_correct = models.BooleanField()
-    
+    started_task_at = models.FloatField()
+    time_elapsed = models.FloatField()
+    time_remaining = models.FloatField()
+
+    def setup_round(self):
+        self.time_for_task = C.TIME_FOR_TASK
+
+    def start_task(self):
+        self.started_task_at = time.time()
+
+    def get_time_remaining(self):
+        return self.time_for_task - (time.time() - self.in_round(1).started_task_at)
+
     @property
     def response_fields(self):
-        return ["response_1", "response_2", "response_3", "response_4", "response_5"]
+        return [
+            "response_1",
+            "response_2",
+            "response_3",
+            "response_4",
+            "response_5",
+        ]
 
     @property
     def response(self):
@@ -68,20 +96,26 @@ class Player(BasePlayer):
 
     def check_response(self):
         self.is_correct = (
-            self.response_1 == self.subsession.lookup_dict[self.subsession.word[0]]
-            and self.response_2 == self.subsession.lookup_dict[self.subsession.word[1]]
-            and self.response_3 == self.subsession.lookup_dict[self.subsession.word[2]]
-            and self.response_4 == self.subsession.lookup_dict[self.subsession.word[3]]
-            and self.response_5 == self.subsession.lookup_dict[self.subsession.word[4]]
+            self.response == self.subsession.correct_response
         )
         if self.is_correct:
             self.payoff = self.subsession.payment_per_correct
+
+
+def creating_session(subsession):
+    subsession.setup_round()
+
 
 # PAGES
 class Intro(Page):
     @staticmethod
     def is_displayed(player):
         return player.round_number == 1
+
+    @staticmethod
+    def before_next_page(player,timeout_happened):
+        player.start_task()
+
 
 class Decision(Page):
     form_model = "player"
@@ -94,10 +128,16 @@ class Decision(Page):
     def before_next_page(player,timeout_happened):
         player.check_response()
 
+    @staticmethod
+    def get_timeout_seconds(player):
+        return player.get_time_remaining()
+
+
 class Results(Page):
     @staticmethod
     def is_displayed(player):
         return player.round_number == C.NUM_ROUNDS
+
 
 page_sequence = [
     Intro,
